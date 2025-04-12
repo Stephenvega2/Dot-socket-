@@ -26,24 +26,21 @@ try:
         s.close()
         exit()
 
-    # Extract IV and encrypted data
-    iv = data[1:17]  # First 16 bytes after dot are IV
-    encrypted = data[17:]
+    # Extract nonce, encrypted data, and tag
+    nonce = data[1:13]  # First 12 bytes after dot are nonce
+    encrypted = data[13:-16]  # Everything after nonce, before last 16 bytes (tag)
+    tag = data[-16:]  # Last 16 bytes are the authentication tag
 
     # Derive the same key using SHA-256
     key_derivation = SECRET_KEY + b"."  # Append dot for consistency
-    sha256_key = hashlib.sha256(key_derivation).digest()[:16]  # Truncate to 16 bytes for AES-128
+    sha256_key = hashlib.sha256(key_derivation).digest()[:32]  # Use 32 bytes for AES-256
 
-    # Decrypt
-    cipher = Cipher(algorithms.AES(sha256_key), modes.CBC(iv), backend=default_backend())
+    # Decrypt with AES-GCM (verify integrity)
+    cipher = Cipher(algorithms.AES(sha256_key), modes.GCM(nonce, tag), backend=default_backend())
     decryptor = cipher.decryptor()
-    padded = decryptor.update(encrypted) + decryptor.finalize()
+    decrypted = decryptor.update(encrypted) + decryptor.finalize()
 
-    # Remove padding
-    padding_len = ord(padded[-1])
-    decrypted = padded[:-padding_len].decode('utf-8')
-
-    print(f"h: {decrypted}")  # Output the message
+    print(f"h: {decrypted.decode('utf-8')}")  # Output the message
 
 except Exception as e:
     print(f"Error: {e}")
