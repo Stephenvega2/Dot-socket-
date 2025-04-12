@@ -8,24 +8,20 @@ import hashlib
 SECRET_KEY = b"mysecretkey123"  # Use a stronger, random key in real scenarios
 MESSAGE = "hello world"
 
-# Generate a random IV (Initialization Vector) for AES
-iv = os.urandom(16)
+# Generate a random nonce (IV) for AES-GCM (12 bytes is typical for GCM)
+nonce = os.urandom(12)
 
-# Derive key using SHA-256 (truncate to 16 bytes for AES-128)
+# Derive key using SHA-256 (truncate to 32 bytes for AES-256, or 16 for AES-128)
 key_derivation = SECRET_KEY + b"."  # Append dot for consistency
-sha256_key = hashlib.sha256(key_derivation).digest()[:16]  # Truncate to 16 bytes for AES-128
+sha256_key = hashlib.sha256(key_derivation).digest()[:32]  # Use 32 bytes for AES-256 for stronger security
 
-# Pad message to be multiple of 16 bytes (AES block size)
-padding_length = 16 - (len(MESSAGE) % 16)
-MESSAGE += chr(padding_length) * padding_length
-
-# Encrypt with AES in CBC mode
-cipher = Cipher(algorithms.AES(sha256_key), modes.CBC(iv), backend=default_backend())
+# Encrypt with AES-GCM (includes authentication)
+cipher = Cipher(algorithms.AES(sha256_key), modes.GCM(nonce), backend=default_backend())
 encryptor = cipher.encryptor()
 encrypted = encryptor.update(MESSAGE.encode()) + encryptor.finalize()
 
-# Disguise as dot + IV + encrypted data
-disguised = b"." + iv + encrypted
+# Disguise as dot + nonce + encrypted data + tag
+disguised = b"." + nonce + encrypted + encryptor.tag  # Tag ensures integrity
 
 # Send over socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,7 +30,7 @@ port = 12345
 try:
     s.connect((host, port))
     s.send(disguised)
-    print(f"Sent disguised as: . (actual encrypted: {encrypted.hex()})")
+    print(f"Sent disguised as: . (actual encrypted: {encrypted.hex()}, tag: {encryptor.tag.hex()})")
 except Exception as e:
     print(f"Error sending: {e}")
 finally:
