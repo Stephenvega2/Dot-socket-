@@ -1,3 +1,6 @@
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f74785cfb1ee401cb476dfd5fecab892)](https://app.codacy.com/gh/Stephenvega2/Dot-socket-?utm_source=github.com&utm_medium=referral&utm_content=Stephenvega2/Dot-socket-&utm_campaign=Badge_Grade)
+
 thanks to grok by xai ,Gemini by GoogleBing by Microsoft amd chat gpt 
 I was able to bring my idea to this.
 this sockets eill send a dot instead of the actual key once the dot is received  by the other side for validation it will decrpted the message with the same key from the other side this 3nsures nonevadroppers or any intercepting of the message and if so they will only see a dot.
